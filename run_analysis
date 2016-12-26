@@ -27,12 +27,96 @@ data.table   reshape2
       
 path <- getwd()
 
-Get Data 
 > path
 [1] "C:/CodigoR"
-      url <- "https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip"
-f <- "Dataset.zip"
-if (!file.exists(path)) {
-    dir.create(path)
-}
-download.file(url, file.path(path, f))
+
+
+## considering zip file is downloaded and saved under working directory
+unzip("getdata-projectfiles-UCI HAR Dataset.zip")
+
+## test data:
+XTest<- read.table("UCI HAR Dataset/test/X_test.txt")
+YTest<- read.table("UCI HAR Dataset/test/Y_test.txt")
+SubjectTest <-read.table("UCI HAR Dataset/test/subject_test.txt")
+
+## train data:
+XTrain<- read.table("UCI HAR Dataset/train/X_train.txt")
+YTrain<- read.table("UCI HAR Dataset/train/Y_train.txt")
+SubjectTrain <-read.table("UCI HAR Dataset/train/subject_train.txt")
+
+## features and activity
+features<-read.table("UCI HAR Dataset/features.txt")
+activity<-read.table("UCI HAR Dataset/activity_labels.txt")
+
+
+##Part1 - merges train and test data in one dataset (full dataset at the end)
+X<-rbind(XTest, XTrain)
+Y<-rbind(YTest, YTrain)
+Subject<-rbind(SubjectTest, SubjectTrain)
+
+Get information 
+> dim(X)
+[1] 10299   561
+> dim(Y)
+[1] 10299     1
+> dim(Subject)
+[1] 10299     1
+
+##Part2 Extracts only the measurements on the mean and standard deviation for each measurement.
+
+##getting features indeces which contain mean() and std() in their name
+index<-grep("mean\\(\\)|std\\(\\)", features[,2]) 
+length(index) 
+## count of features
+[1] 66
+
+X<-X[,index] 
+## getting only variables with mean/stdev
+dim(X) 
+## checking dim of subset 
+## [1] 10299    66
+
+
+##Part3
+Uses descriptive activity names to name the activities in the data set.
+
+Y[,1]<-activity[Y[,1],2] ## replacing numeric values with lookup value from activity.txt; won't reorder Y set
+head(Y)
+
+
+##Part4 Appropriately labels the data set with descriptive activity names.
+
+names<-features[index,2] ## getting names for variables
+names(X)<-names ## updating colNames for new dataset
+names(Subject)<-"SubjectID"
+names(Y)<-"Activity"
+    
+CleanedData<-cbind(Subject, Y, X)
+head(CleanedData[,c(1:4)]) ## first 5 columns
+SubjectID Activity tBodyAcc-mean()-X
+1         2 STANDING         0.2571778
+2         2 STANDING         0.2860267
+3         2 STANDING         0.2754848
+4         2 STANDING         0.2702982
+5         2 STANDING         0.2748330
+6         2 STANDING         0.2792199
+  tBodyAcc-mean()-Y
+1       -0.02328523
+2       -0.01316336
+3       -0.02605042
+4       -0.03261387
+5       -0.02784779
+6       -0.01862040
+
+##Part5 Creates a second, independent tidy data set with the average of each variable for each activity and each subject.
+
+CleanedData<-data.table(CleanedData)
+TidyData <- CleanedData[, lapply(.SD, mean), by = 'SubjectID,Activity'] ## features average by Subject and by activity
+dim(TidyData)
+
+[1] 180  68
+
+write.table(TidyData, file = "Tidy.txt", row.names = FALSE)
+
+The first 10 Rows and the 5 columns
+head(TidyData[order(SubjectID)][,c(1:4), with = FALSE],10) 
