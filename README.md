@@ -4,7 +4,6 @@ Steps to reproduce this projectOpen the R script
 run_analysis.r 
 
 using a text editor.
-
 Run the R script run_analysis.r.
 
 It calls the R Markdown file, 
